@@ -107,6 +107,10 @@ docker exec -it ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 t
 
 # Escuchar el mensaje en ROS1
 docker exec -it ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rostopic echo /test2"
+
+
+# En una terminal separada
+docker exec -it ros2_humble /start_bridge.sh
 ```
 
 ## EJEMPLOS PRÁCTICOS

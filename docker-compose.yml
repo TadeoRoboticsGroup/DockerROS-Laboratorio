@@ -18,14 +18,12 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME/.Xauthority:/root/.Xauthority:rw
-      - /home/axioma/Proyectos-ROS/Proyectos-ros1-melodic:/
+      - /home/axioma/Proyectos-ROS/Proyectos-ros1-melodic:/ros1_ws/src
       - /dev:/dev
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
       - /dev/ttyACM0:/dev/ttyACM0
-    restart: unless-stopped
-    command: bash -c "source /opt/ros/melodic/setup.bash && roscore & tail -f /dev/null"
-
+    command: bash -c "roscore & tail -f /dev/null"
 
   ros2_humble:
     build:
@@ -33,8 +31,10 @@ services:
       dockerfile: Dockerfile.ros2
     image: ros2_humble_custom
     container_name: ros2_humble
-    network_mode: "host"
+    # Quitar network_mode: "host" para usar mapeo de puertos
     privileged: true
+    ports:
+      - "7400-7500:7400-7500/udp"  # Mapeo correcto de puertos UDP para DDS
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
@@ -52,27 +52,4 @@ services:
       - /dev/ttyACM0:/dev/ttyACM0
     depends_on:
       - ros1_melodic
-    restart: unless-stopped
     command: tail -f /dev/null
-
-  bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile.bridge
-    container_name: ros_bridge
-    network_mode: "host"
-    environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-      - ROS_MASTER_URI=http://localhost:11311
-      - ROS_DOMAIN_ID=0
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - /dev:/dev
-    privileged: true
-    depends_on:
-      - ros1_melodic
-      - ros2_humble
-    restart: unless-stopped
-    # Agregar comando para iniciar el bridge automáticamente:
-    command: bash -c "sleep 5 && source /opt/ros/melodic/setup.bash && source /opt/ros/humble/setup.bash && source /bridge_ws/install/setup.bash && ros2 run ros1_bridge dynamic_bridge --bridge-all-topics"
