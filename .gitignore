@@ -1,0 +1,86 @@
+# Archivos compilados y binarios
+*.o
+*.so
+*.a
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Directorios de build de ROS
+build/
+devel/
+install/
+log/
+logs/
+.catkin_workspace
+
+# Archivos temporales
+*~
+.*.swp
+.*.swo
+
+# Archivos de log
+*.log
+*.bag
+
+# Carpetas y archivos específicos de sistemas operativos
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Directorios de IDE/Editor
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*~.nib
+local.properties
+.settings/
+.project
+.cproject
+.classpath
+.factorypath
+
+# Archivos específicos de ROS
+.ros/
+.catkin_tools/
+
+# Archivos de configuración local
+.env
+.env.*
+
+# Directorios de caché y dependencias externas
+.cache/
+.dependencies/
+.ccache/
+
+# Archivos Docker generados
+.docker/
+
+# Archivos de configuración específicos de microcontroladores
+*.hex
+*.bin
+*.elf
+
+# Archivos de base de datos
+*.db
+*.sqlite3
+
+# Archivos de configuración local de Python
+.python-version
+.ipython/
+.jupyter/
+
+#No subir los proyectos
+Proyectos-ros1-melodic/*
+Proyectos-ros2-humble/*

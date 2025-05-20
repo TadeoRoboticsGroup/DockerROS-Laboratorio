@@ -1,0 +1,187 @@
+INSTALACIÓN Y CONFIGURACIÓN INICIAL
+
+# Requisitos previos
+sudo apt update
+sudo apt install -y docker.io docker-compose xterm
+
+# Añadir usuario al grupo Docker (evita usar sudo para comandos docker)
+sudo usermod -aG docker $USER
+# IMPORTANTE: Cerrar sesión y volver a iniciar para aplicar cambios de grupo
+
+# Clonar repositorio y entrar al directorio (si aplica)
+# git clone https://tu-repositorio.git
+# cd tu-directorio
+
+# Permitir conexiones X11 desde Docker (necesario para aplicaciones gráficas)
+xhost +local:docker
+
+# Construir las imágenes (sólo primera vez o al actualizar Dockerfiles)
+docker-compose build
+
+# Iniciar todos los contenedores
+docker-compose up -d
+
+
+-------------------------------------------------------------------
+
+ 
+GESTIÓN DE CONTENEDORES
+
+# Ver estado de contenedores
+docker-compose ps
+
+# Iniciar contenedores (si están detenidos)
+docker-compose start
+
+# Detener contenedores (mantiene datos)
+docker-compose stop
+
+# Detener y eliminar contenedores (útil para reiniciar desde cero)
+docker-compose down
+
+# Reiniciar todos los contenedores
+docker-compose restart
+
+# Ver logs (útil para diagnóstico)
+docker-compose logs
+
+# Ver logs de un contenedor específico en tiempo real
+docker-compose logs -f ros_bridge
+
+
+-------------------------------------------------------------------
+
+ 
+COMUNICACIÓN ROS1-ROS2 CON BRIDGE
+
+# Verificar que el bridge esté funcionando
+docker-compose logs ros_bridge
+
+# Listar tópicos de ROS1 (desde el contenedor ROS1)
+docker exec -it ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rostopic list"
+
+# Listar tópicos de ROS2 (desde el contenedor ROS2)
+docker exec -it ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 topic list"
+
+# Publicar un mensaje de prueba en ROS1
+docker exec -it ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rostopic pub /test std_msgs/String 'data: \"Mensaje desde ROS1\"' -r 1"
+
+# Escuchar el mensaje en ROS2 (debería recibir los mensajes de ROS1)
+docker exec -it ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 topic echo /test"
+
+# Publicar un mensaje de prueba en ROS2
+docker exec -it ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 topic pub /test2 std_msgs/String 'data: \"Mensaje desde ROS2\"' -r 1"
+
+# Escuchar el mensaje en ROS1
+docker exec -it ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rostopic echo /test2"
+
+
+-------------------------------------------------------------------
+
+ 
+PROBAR TURTLESIM
+
+
+# Iniciar turtlesim en ROS1
+docker exec -d ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rosrun turtlesim turtlesim_node"
+
+# Controlar turtlesim desde una nueva ventana de terminal
+xterm -e "docker exec -it ros1_melodic bash -c 'source /opt/ros/melodic/setup.bash && rosrun turtlesim turtle_teleop_key'"
+
+# Alternativamente, iniciar turtlesim en ROS2
+docker exec -d ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 run turtlesim turtlesim_node"
+
+# Controlar turtlesim ROS2 desde una nueva ventana
+xterm -e "docker exec -it ros2_humble bash -c 'source /opt/ros/humble/setup.bash && ros2 run turtlesim turtle_teleop_key'"
+
+
+-------------------------------------------------------------------
+
+ 
+COMUNICACIÓN ENTRE LOS CONTENEDORES DE ROS1 Y ROS2
+
+# Desde el host (Ubuntu 22.04 con ROS2 instalado)
+# Primero, configurar variables de entorno
+export ROS_DOMAIN_ID=0
+source /opt/ros/humble/setup.bash
+
+# Publicar un mensaje desde el host a ROS1
+ros2 topic pub /mensaje_host std_msgs/String '{data: "Mensaje desde el host"}' -r 1
+
+# Escuchar en ROS1 (contenedor)
+docker exec -it ros1_melodic bash -c "source /opt/ros/melodic/setup.bash && rostopic echo /mensaje_host"
+
+
+-------------------------------------------------------------------
+
+ 
+ DISPOSITIVOS USB Y SERIALES
+
+ # Listar dispositivos USB conectados (desde el host)
+lsusb
+
+# Listar puertos seriales disponibles (desde el host)
+ls -l /dev/ttyUSB* /dev/ttyACM*
+
+# Verificar puertos seriales desde los contenedores
+docker exec -it ros1_melodic ls -l /dev/ttyUSB* /dev/ttyACM*
+docker exec -it ros2_humble ls -l /dev/ttyUSB* /dev/ttyACM*
+
+# Cambiar permisos de un dispositivo si es necesario
+sudo chmod 666 /dev/ttyACM0
+
+
+Ejemplo: Conexión con microcontrolador en ROS2
+
+
+# Instalar micro-ROS si es necesario
+docker exec -it ros2_humble bash -c "apt update && apt install -y ros-humble-micro-ros-agent"
+
+# Conectar con un dispositivo usando micro-ROS
+docker exec -it ros2_humble bash -c "source /opt/ros/humble/setup.bash && ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 -b 115200"
+
+
+-------------------------------------------------------------------
+
+
+GESTIÓN DE ESPACIOS DE TRABAJO Y PAQUETES
+
+ROS1 (Melodic)
+
+# Compilar espacio de trabajo ROS1
+docker exec -it ros1_melodic bash -c "cd /ros1_ws && source /opt/ros/melodic/setup.bash && catkin_make"
+
+# Crear un nuevo paquete ROS1
+docker exec -it ros1_melodic bash -c "cd /ros1_ws/src && source /opt/ros/melodic/setup.bash && catkin_create_pkg mi_paquete std_msgs rospy roscpp"
+
+
+ROS2 (Humble)
+
+# Compilar espacio de trabajo ROS2
+docker exec -it ros2_humble bash -c "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build --symlink-install"
+
+# Crear un nuevo paquete ROS2
+docker exec -it ros2_humble bash -c "cd /ros2_ws/src && source /opt/ros/humble/setup.bash && ros2 pkg create --build-type ament_cmake mi_paquete_ros2"
+
+# Compilar un paquete específico
+docker exec -it ros2_humble bash -c "cd /ros2_ws && source /opt/ros/humble/setup.bash && colcon build --packages-select mi_paquete_ros2"
+
+
+-------------------------------------------------------------------
+
+
+SOLUCIÓN DE PROBLEMAS COMUNES
+
+Problema 1: No se pueden ver aplicaciones gráficas
+
+# En el host:
+xhost +local:docker
+
+# Verificar configuración de DISPLAY en el contenedor
+docker exec -it ros1_melodic bash -c "echo $DISPLAY"
+
+# Asegurarse de que las variables de entorno X11 estén configuradas correctamente
+docker-compose down
+# Editar docker-compose.yml y verificar sección environment y volumes
+docker-compose up -d
+

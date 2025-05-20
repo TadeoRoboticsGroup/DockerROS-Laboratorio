@@ -1,0 +1,49 @@
+# Archivos temporales
+*.tmp
+*.temp
+*~
+
+# Archivos de log
+*.log
+logs/
+
+# Directorios de build
+build/
+devel/
+install/
+log/
+
+# Carpetas de caché
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.ipynb_checkpoints
+
+# Archivos de configuración local
+.env
+.env.*
+
+# Archivos específicos de IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archivos de copia de seguridad
+*.bak
+*.backup
+
+# Directorios y archivos Git
+.git/
+.gitignore
+
+# Archivos de documentación
+doc/
+docs/
+*.md
+README*
+
+# Directorios específicos de ROS que no deben incluirse
+rosbag/

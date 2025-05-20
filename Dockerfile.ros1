@@ -1,0 +1,231 @@
+# Imagen base de ROS1 Melodic
+FROM osrf/ros:melodic-desktop-full
+
+# Evitar interacciones durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependencias básicas primero
+RUN apt-get update && apt-get install -y \
+    curl wget git build-essential cmake nano \
+    lsb-release gnupg2 \
+    python-pip python3-pip python-dev python3-dev \
+    usbutils libudev-dev \
+    python-opencv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes ROS core
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-rqt* \
+    ros-melodic-rviz \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar MoveIt y controladores
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-moveit \
+    ros-melodic-moveit-ros \
+    ros-melodic-moveit-visual-tools \
+    ros-melodic-joint-trajectory-controller \
+    ros-melodic-effort-controllers \
+    ros-melodic-position-controllers \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes de percepción 3D y SLAM
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-pcl-ros \
+    ros-melodic-pcl-conversions \
+    ros-melodic-perception-pcl \
+    ros-melodic-rtabmap-ros \
+    ros-melodic-octomap \
+    ros-melodic-octomap-ros \
+    ros-melodic-cartographer-ros \
+    ros-melodic-realsense2-camera \
+    ros-melodic-velodyne \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes de navegación
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-navigation \
+    ros-melodic-slam-gmapping \
+    ros-melodic-amcl \
+    ros-melodic-map-server \
+    ros-melodic-move-base \
+    ros-melodic-global-planner \
+    ros-melodic-teb-local-planner \
+    ros-melodic-smach \
+    ros-melodic-smach-ros \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes de robots específicos
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-ur-msgs \
+    ros-melodic-mavros \
+    ros-melodic-mavros-extras \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes multi-robot y comunicación
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-multimaster-fkie \
+    ros-melodic-multirobot-map-merge \
+    ros-melodic-rosserial \
+    ros-melodic-rosserial-arduino \
+    ros-melodic-rosserial-python \
+    ros-melodic-serial \
+    ros-melodic-usb-cam \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes de visión y procesamiento de imágenes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-cv-bridge \
+    ros-melodic-vision-opencv \
+    ros-melodic-image-transport \
+    ros-melodic-image-transport-plugins \
+    ros-melodic-compressed-image-transport \
+    ros-melodic-camera-calibration \
+    ros-melodic-camera-info-manager \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar paquetes de simulación y puente
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-melodic-gazebo-ros-pkgs \
+    ros-melodic-gazebo-ros-control \
+    ros-melodic-rosbridge-server \
+    || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias para X11 y visualización
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    x11-apps \
+    xauth \
+    libxcb-xinerama0 \
+    dbus-x11 \
+    mesa-utils \
+    libqt5gui5 \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    python-tk \
+    python-pil \
+    python-pil.imagetk \
+    python-catkin-tools \
+    python-rosdep \
+    python-rosinstall \
+    python-rosinstall-generator \
+    python-wstool \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Actualizar pip y setuptools
+RUN pip install --upgrade pip setuptools
+
+# Instalar dependencias básicas de Python
+RUN pip install --no-cache-dir \
+    numpy \
+    matplotlib \
+    pygame \
+    pyyaml \
+    rospkg \
+    future \
+    catkin_pkg
+
+# Instalar paquetes científicos y ML/DL
+RUN pip install --no-cache-dir \
+    scikit-learn \
+    scikit-image \
+    pillow \
+    h5py==2.10.0 \
+    || true
+
+# Instalar TensorFlow y Keras (versiones específicas para Python 2.7)
+RUN pip install --no-cache-dir \
+    tensorflow==1.14.0 \
+    keras==2.2.5 \
+    || true
+
+# Instalar paquetes para RL y comunicación
+RUN pip install --no-cache-dir \
+    pyserial \
+    gym \
+    pydot \
+    graphviz \
+    || true
+
+# Instalar stable-baselines al final
+RUN pip install --no-cache-dir stable-baselines || true
+
+# Configurar acceso a puertos USB para Arduino, ESP, STM, etc.
+# Crear el directorio udev si no existe
+RUN usermod -a -G dialout root && \
+    mkdir -p /etc/udev/rules.d && \
+    echo 'KERNEL=="ttyUSB[0-9]*",MODE="0666"' >> /etc/udev/rules.d/99-serial.rules && \
+    echo 'KERNEL=="ttyACM[0-9]*",MODE="0666"' >> /etc/udev/rules.d/99-serial.rules
+
+# Configurar las variables de entorno
+ENV QT_X11_NO_MITSHM=1
+ENV LIBGL_ALWAYS_INDIRECT=0
+
+# Agregar variables X11 adicionales
+ENV NO_AT_BRIDGE=1
+ENV QT_ACCESSIBILITY=1
+# Configurar un directorio de tiempo de ejecución XDG
+ENV XDG_RUNTIME_DIR=/tmp/runtime-root
+
+# Crear el directorio de tiempo de ejecución XDG
+RUN mkdir -p /tmp/runtime-root && chmod 700 /tmp/runtime-root
+
+# Añadir script para verificar X11 (corregido para incluirlo dentro de una instrucción RUN)
+RUN echo 'echo "DISPLAY=$DISPLAY"' >> /tmp/x11_check.sh && \
+    echo 'ls -la /tmp/.X11-unix/ || echo "No X11 socket found"' >> /tmp/x11_check.sh && \
+    chmod +x /tmp/x11_check.sh
+
+# Crear y configurar el espacio de trabajo ROS1
+WORKDIR /ros1_ws
+RUN mkdir -p /ros1_ws/src
+
+# Instalar code-server (VS Code en el navegador)
+RUN curl -fsSL https://code-server.dev/install.sh | sh || true
+
+# Descargar paquetes adicionales para robótica avanzada desde GitHub
+WORKDIR /ros1_ws/src
+RUN git clone -b melodic-devel https://github.com/ros-planning/moveit_tutorials.git && \
+    git clone -b melodic-devel https://github.com/ros-planning/panda_moveit_config.git && \
+    git clone https://github.com/utecrobotics/ros_tools.git && \
+    # ORB-SLAM2 para SLAM visual avanzado
+    git clone https://github.com/appliedAI-Initiative/orb_slam_2_ros.git && \
+    # Ejemplo de planificación PDDL
+    git clone https://github.com/KCL-Planning/ROSPlan.git || true
+
+# Configurar el entorno ROS1
+WORKDIR /ros1_ws
+SHELL ["/bin/bash", "-c"]
+RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc && \
+    echo "if [ -f /ros1_ws/devel/setup.bash ]; then source /ros1_ws/devel/setup.bash; fi" >> ~/.bashrc && \
+    echo "export PYTHONPATH=\$PYTHONPATH:/opt/ros/melodic/lib/python2.7/dist-packages" >> ~/.bashrc
+
+# Crear un script de punto de entrada
+RUN echo '#!/bin/bash' > /ros_entrypoint.sh && \
+    echo 'source /opt/ros/melodic/setup.bash' >> /ros_entrypoint.sh && \
+    echo 'cd /ros1_ws' >> /ros_entrypoint.sh && \
+    echo 'if [ -f "/ros1_ws/devel/setup.bash" ]; then' >> /ros_entrypoint.sh && \
+    echo '  source /ros1_ws/devel/setup.bash' >> /ros_entrypoint.sh && \
+    echo 'fi' >> /ros_entrypoint.sh && \
+    echo 'echo "DISPLAY=$DISPLAY"' >> /ros_entrypoint.sh && \
+    echo 'ls -la /tmp/.X11-unix/ || echo "No X11 socket found"' >> /ros_entrypoint.sh && \
+    echo 'exec "$@"' >> /ros_entrypoint.sh && \
+    chmod +x /ros_entrypoint.sh
+
+# Crear script para monitorear puertos seriales
+RUN echo '#!/bin/bash' > /monitor_serial.sh && \
+    echo 'echo "Puertos seriales disponibles:"' >> /monitor_serial.sh && \
+    echo 'ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null || echo "No hay dispositivos conectados"' >> /monitor_serial.sh && \
+    chmod +x /monitor_serial.sh
+
+# Punto de entrada
+ENTRYPOINT ["/ros_entrypoint.sh"]
+
+# Comando por defecto
+CMD ["bash"]

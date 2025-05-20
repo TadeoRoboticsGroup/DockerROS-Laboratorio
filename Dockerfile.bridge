@@ -1,0 +1,56 @@
+# Imagen base con ROS1 Melodic y ROS2 Humble
+FROM osrf/ros:humble-desktop-full
+
+# Evitar interacciones durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar ROS1 Melodic
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+    apt-get update && apt-get install -y \
+    ros-melodic-ros-base \
+    python-catkin-tools \
+    python-rosdep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias para el bridge
+RUN apt-get update && apt-get install -y \
+    python3-rosdep \
+    python3-rosinstall \
+    python3-rosinstall-generator \
+    python3-wstool \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Inicializar rosdep si no se ha hecho ya
+RUN rosdep init || echo "rosdep ya inicializado" && \
+    rosdep update
+
+# Configurar workspace para el bridge
+WORKDIR /bridge_ws
+RUN mkdir -p /bridge_ws/src
+
+# Obtener el código fuente del bridge
+WORKDIR /bridge_ws/src
+RUN git clone https://github.com/ros2/ros1_bridge.git -b humble
+
+# Configurar entorno para ambos ROS
+SHELL ["/bin/bash", "-c"]
+RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc && \
+    echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+# Crear script para iniciar el bridge
+RUN echo '#!/bin/bash' > /start_bridge.sh && \
+    echo 'source /opt/ros/melodic/setup.bash' >> /start_bridge.sh && \
+    echo 'source /opt/ros/humble/setup.bash' >> /start_bridge.sh && \
+    echo 'cd /bridge_ws' >> /start_bridge.sh && \
+    echo 'colcon build --symlink-install --packages-select ros1_bridge --cmake-force-configure' >> /start_bridge.sh && \
+    echo 'source /bridge_ws/install/setup.bash' >> /start_bridge.sh && \
+    echo 'ros2 run ros1_bridge dynamic_bridge --bridge-all-topics' >> /start_bridge.sh && \
+    chmod +x /start_bridge.sh
+
+# Punto de entrada
+ENTRYPOINT ["/bin/bash"]
+
+# Comando por defecto
+CMD ["/start_bridge.sh"]
